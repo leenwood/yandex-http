@@ -1,7 +1,7 @@
 package url
 
 type RepositoryInterface interface {
-	FindById(id int) Url
-	FindByGuid(guid string) Url
-	Save(model Url) bool
+	FindById(id string) (*Url, error)
+	FindByUrl(url string) (*Url, error)
+	Save(model *Url) (*Url, error)
 }

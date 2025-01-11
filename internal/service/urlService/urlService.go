@@ -1,9 +1,9 @@
 package urlservice
 
 import (
-	"crypto/rand"
+	"context"
 	"leenwood/yandex-http/internal/domain/url"
-	"leenwood/yandex-http/internal/domain/url/repository"
+	"leenwood/yandex-http/internal/domain/url/postgresRepository"
 	"time"
 )
 
@@ -11,26 +11,38 @@ type UrlService struct {
 	r url.RepositoryInterface
 }
 
-func NewService() (*UrlService, error) {
-	r := repository.NewRepository()
+func NewService(ctx context.Context) (*UrlService, error) {
+	r, err := postgresRepository.NewRepository(ctx, "")
+	if err != nil {
+		return nil, err
+	}
 	return &UrlService{
 		r: r,
 	}, nil
 }
 
-func (s *UrlService) Create(OriginalUrl string) url.Url {
-	// TODO Добавить проверку на наличие уникальной ссылки
-	uuid := make([]byte, 6)
-	rand.Read(uuid)
-	// TODO Добавить проверку на занятость юида
-	var model url.Url
-	model.ShortUrl = string(uuid)
+func (s *UrlService) Create(OriginalUrl string) (*url.Url, error) {
+
+	// Проверяем, существует ли уже запись с таким OriginalUrl
+	existingUrl, err := s.r.FindByUrl(OriginalUrl)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if existingUrl != nil {
+		return existingUrl, nil
+	}
+
+	model := &url.Url{}
 	model.OriginalUrl = OriginalUrl
 	model.Date = time.Now()
-	result := s.r.Save(model)
-	if result {
-		return model
-	} else {
-		return url.Url{}
+	model.ClickCount = 0
+	result, err := s.r.Save(model)
+
+	if err != nil {
+		return nil, err
 	}
+
+	return result, nil
 }
