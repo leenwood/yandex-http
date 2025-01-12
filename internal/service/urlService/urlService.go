@@ -4,7 +4,6 @@ import (
 	"context"
 	"leenwood/yandex-http/internal/domain/url"
 	"leenwood/yandex-http/internal/domain/url/postgresRepository"
-	"time"
 )
 
 type UrlService struct {
@@ -33,12 +32,7 @@ func (s *UrlService) Create(OriginalUrl string) (*url.Url, error) {
 	if existingUrl != nil {
 		return existingUrl, nil
 	}
-
-	model := &url.Url{}
-	model.OriginalUrl = OriginalUrl
-	model.Date = time.Now()
-	model.ClickCount = 0
-	result, err := s.r.Save(model)
+	result, err := s.r.Save(OriginalUrl)
 
 	if err != nil {
 		return nil, err
