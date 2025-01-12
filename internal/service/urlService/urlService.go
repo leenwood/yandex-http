@@ -32,11 +32,28 @@ func (s *UrlService) Create(OriginalUrl string) (*url.Url, error) {
 	if existingUrl != nil {
 		return existingUrl, nil
 	}
-	result, err := s.r.Save(OriginalUrl)
+	result, err := s.r.Save(OriginalUrl, "")
 
 	if err != nil {
 		return nil, err
 	}
 
+	return result, nil
+}
+
+func (s *UrlService) CreateWithCustomId(OriginalUrl, id string) (*url.Url, error) {
+	existingUrl, err := s.r.FindByUrl(OriginalUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if existingUrl != nil {
+		return existingUrl, nil
+	}
+
+	result, err := s.r.Save(OriginalUrl, id)
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
