@@ -16,6 +16,7 @@ type DatabaseConfig struct {
 	Username string
 	Password string
 	Database string
+	SSLMode  bool
 }
 
 func NewConfig() Config {
@@ -30,6 +31,7 @@ func NewConfig() Config {
 			Username: "user",
 			Password: "password",
 			Database: "shortUrl",
+			SSLMode:  false,
 		},
 	}
 }

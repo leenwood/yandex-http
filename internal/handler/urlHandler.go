@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"leenwood/yandex-http/config"
 	"leenwood/yandex-http/internal/usecase"
 	"leenwood/yandex-http/internal/usecase/dto"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UrlHandler struct {
@@ -22,48 +24,71 @@ func NewUrlHandler(ctx context.Context, cfg config.Config) (*UrlHandler, error) 
 	return &UrlHandler{us: us}, nil
 }
 
-func (uh *UrlHandler) CreateShortUrl(res http.ResponseWriter, req *http.Request) {
-	var urlShort, id string
-
-	err := req.ParseForm()
-	if err != nil {
-		http.Error(res, "failed to parse form: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-	for k, v := range req.Form {
-		switch k {
-		case "url":
-			urlShort = v[0]
-		case "id":
-			id = v[0]
-		}
-	}
-	if urlShort == "" {
-		http.Error(res, "url parameter is required", http.StatusBadRequest)
+func (uh *UrlHandler) RegisterRoutes(router *gin.Engine) {
+	router.POST("/", uh.CreateShortUrl)
+	router.GET("/healthz", uh.CheckHealthz)
+}
+func (uh *UrlHandler) CreateShortUrl(c *gin.Context) {
+	var req dto.CreateShortUrlRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request data: " + err.Error()})
 		return
 	}
 
-	var response dto.CreateShortUrlResponse
+	var (
+		response interface{}
+		err      error
+	)
 
-	if id != "" {
-		request := dto.CreateShortUrlWithCustomIdRequest{
-			Url: urlShort,
-			Id:  id,
-		}
-		response, err = uh.us.CreateShortUrlWithCustomId(request)
+	// Обработка в зависимости от наличия ID
+	if req.Id != "" {
+		response, err = uh.handleCustomIdRequest(req)
 	} else {
-		request := dto.CreateShortUrlRequest{Url: urlShort}
-		response, err = uh.us.CreateShortUrl(request)
+		response, err = uh.handleDefaultRequest(req)
 	}
 
+	// Проверка на ошибки
 	if err != nil {
-		http.Error(res, "failed to create short URL: "+err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create short URL: " + err.Error()})
 		return
 	}
 
-	// Кодируем и отправляем ответ
-	res.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(res).Encode(response); err != nil {
-		http.Error(res, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
+	// Успешный ответ
+	c.JSON(http.StatusOK, response)
+}
+
+// Обработка запроса с пользовательским ID
+func (uh *UrlHandler) handleCustomIdRequest(req dto.CreateShortUrlRequest) (interface{}, error) {
+	request := dto.CreateShortUrlWithCustomIdRequest{
+		Url: req.Url,
+		Id:  req.Id,
 	}
+	return uh.us.CreateShortUrlWithCustomId(request)
+}
+
+// Обработка запроса без пользовательского ID
+func (uh *UrlHandler) handleDefaultRequest(req dto.CreateShortUrlRequest) (interface{}, error) {
+	request := dto.CreateShortUrlUseCaseRequest{
+		Url: req.Url,
+	}
+	return uh.us.CreateShortUrl(request)
+}
+
+func (uh *UrlHandler) CheckHealthz(c *gin.Context) {
+	body := fmt.Sprintf("Method: %s\r\n", c.Request.Method)
+	body += "Header =========================== \r\n"
+	for k, v := range c.Request.Header {
+		body += fmt.Sprintf("%s: %v\r\n", k, v)
+	}
+	body += "\r\n"
+	body += "Query Params ===================== \r\n"
+	if err := c.Request.ParseForm(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse query params: " + err.Error()})
+		return
+	}
+	for k, v := range c.Request.Form {
+		body += fmt.Sprintf("%s: %v\r\n", k, v)
+	}
+
+	c.String(http.StatusOK, body)
 }

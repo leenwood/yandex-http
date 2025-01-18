@@ -1,0 +1,18 @@
+### GET request to example server
+GET http://localhost:9000/healthz
+
+###
+
+# curl -X POST http://localhost:9000
+#  -H "Content-Type: application/json"
+#  -d '{"url": "leenwood.ru/contacts", "id": "bio"}'
+POST http://localhost:9000
+Content-Type: application/json
+
+{
+  "url": "leenwood.ru/contacts",
+  "id": "bio"
+}
+
+###
+

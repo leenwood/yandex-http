@@ -1,6 +1,11 @@
 package dto
 
 type CreateShortUrlRequest struct {
+	Url string `form:"url" binding:"required"`
+	Id  string `form:"id"`
+}
+
+type CreateShortUrlUseCaseRequest struct {
 	Url string `json:"url"`
 }
 

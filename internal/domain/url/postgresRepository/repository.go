@@ -2,11 +2,14 @@ package postgresRepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"leenwood/yandex-http/config"
 	"leenwood/yandex-http/internal/domain/url"
 	"time"
 )
@@ -17,7 +20,16 @@ type Repository struct {
 	ctx context.Context
 }
 
-func NewRepository(ctx context.Context, dsn string) (*Repository, error) {
+func NewRepository(ctx context.Context, config config.DatabaseConfig) (*Repository, error) {
+	dsn := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		config.Username,
+		config.Password,
+		config.Hostname,
+		config.Port,
+		config.Database,
+		config.SSLMode,
+	)
 	dbpool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, err
@@ -58,6 +70,9 @@ func (r *Repository) FindByUrl(originalUrl string) (*url.Url, error) {
 		ToSql()
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // Возвращаем nil вместо ошибки
+		}
 		return nil, err
 	}
 
