@@ -151,3 +151,79 @@ func (r *Repository) IsIdExists(id string) (bool, error) {
 	}
 	return exists, nil
 }
+
+func (r *Repository) FindAll(page, limit int) ([]*url.Url, error) {
+	// Рассчитываем смещение
+	offset := (page - 1) * limit
+
+	// Формируем SQL-запрос с пагинацией
+	query, args, err := r.sq.
+		Select("id", "original_url", "click_count", "created_date").
+		From("urls").
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	// Выполняем запрос
+	rows, err := r.db.QueryContext(r.ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Сканируем результаты
+	var urls []*url.Url
+	for rows.Next() {
+		var u url.Url
+		if err := rows.Scan(&u.Id, &u.OriginalUrl, &u.ClickCount, &u.CreatedDate); err != nil {
+			return nil, err
+		}
+		urls = append(urls, &u)
+	}
+
+	// Проверяем наличие ошибок при итерации по строкам
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Если нет записей, возвращаем пустой слайс
+	if len(urls) == 0 {
+		return []*url.Url{}, nil
+	}
+
+	return urls, nil
+}
+
+func (r *Repository) Update(shortUrl *url.Url) (*url.Url, error) {
+	if shortUrl == nil {
+		return nil, errors.New("input URL cannot be nil")
+	}
+
+	if shortUrl.Id == "" {
+		return nil, errors.New("URL ID cannot be empty")
+	}
+
+	// Формируем SQL-запрос для обновления сущности
+	query, args, err := r.sq.
+		Update("urls").
+		Set("original_url", shortUrl.OriginalUrl).
+		Set("click_count", shortUrl.ClickCount).
+		Set("created_date", shortUrl.CreatedDate).
+		Where(sq.Eq{"id": shortUrl.Id}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build update query: %w", err)
+	}
+
+	// Выполняем SQL-запрос
+	_, err = r.db.ExecContext(r.ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute update query: %w", err)
+	}
+
+	// Возвращаем обновлённую сущность
+	return shortUrl, nil
+}

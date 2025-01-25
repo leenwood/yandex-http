@@ -73,3 +73,28 @@ func (mr *MockRepositoryInterfaceMockRecorder) Save(originalUrl, shortUuid inter
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockRepositoryInterface)(nil).Save), originalUrl, shortUuid)
 }
+
+func (m *MockRepositoryInterface) FindAll(page, limit int) ([]*url.Url, error) {
+	ret := m.ctrl.Call(m, "FindAll", page, limit)
+	ret0, _ := ret[0].([]*url.Url)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (mr *MockRepositoryInterfaceMockRecorder) FindAll(page, limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAll", reflect.TypeOf((*MockRepositoryInterface)(nil).FindAll), page, limit)
+}
+
+func (m *MockRepositoryInterface) Update(originalUrl *url.Url) (*url.Url, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", originalUrl)
+	ret0, _ := ret[0].(*url.Url)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (mr *MockRepositoryInterfaceMockRecorder) Update(originalUrl interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepositoryInterface)(nil).Update), originalUrl)
+}

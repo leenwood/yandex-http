@@ -26,7 +26,9 @@ func NewUrlHandler(ctx context.Context, cfg config.Config) (*UrlHandler, error) 
 
 func (uh *UrlHandler) RegisterRoutes(router *gin.Engine) {
 	router.POST("/", uh.CreateShortUrl)
+	router.GET("/:id", uh.RedirectToRouteById)
 	router.GET("/healthz", uh.CheckHealthz)
+	router.GET("/list", uh.GetUrlsInfo)
 }
 func (uh *UrlHandler) CreateShortUrl(c *gin.Context) {
 	var req dto.CreateShortUrlRequest
@@ -72,6 +74,46 @@ func (uh *UrlHandler) handleDefaultRequest(req dto.CreateShortUrlRequest) (inter
 		Url: req.Url,
 	}
 	return uh.us.CreateShortUrl(request)
+}
+
+func (uh *UrlHandler) GetUrlsInfo(c *gin.Context) {
+	var request dto.PaginationRequest
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// Устанавливаем значения по умолчанию
+	if request.Limit == 0 || request.Limit > 100 {
+		request.Limit = 100 // Значение по умолчанию для Limit
+	}
+	if request.Page == 0 {
+		request.Page = 1 // Значение по умолчанию для Page
+	}
+
+	data, err := uh.us.GetUrlList(request)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	// Логика обработки запроса (пример)
+	c.JSON(http.StatusOK, gin.H{"data": data})
+
+}
+
+func (uh *UrlHandler) RedirectToRouteById(c *gin.Context) {
+	var request dto.UrlClickRequest
+	request.Id = c.Param("id")
+
+	redirectUrl, err := uh.us.ClickUrl(request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, redirectUrl)
+
 }
 
 func (uh *UrlHandler) CheckHealthz(c *gin.Context) {

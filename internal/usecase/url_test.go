@@ -8,6 +8,7 @@ import (
 	"leenwood/yandex-http/internal/domain/url/mocks"
 	"leenwood/yandex-http/internal/usecase/dto"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -121,4 +122,60 @@ var _ = Describe("UrlUseCase", func() {
 			})
 		})
 	})
+
+	Describe("GetUrlList", func() {
+		Context("when URLs exist in the repository", func() {
+			It("should return the paginated list of URLs", func() {
+				pagination := dto.PaginationRequest{Page: 1, Limit: 2}
+				createdDate := time.Now()
+				mockUrls := []*url.Url{
+					{
+						Id:          "id1",
+						OriginalUrl: "http://example1.com",
+						ClickCount:  5,
+						CreatedDate: createdDate,
+					},
+					{
+						Id:          "id2",
+						OriginalUrl: "http://example2.com",
+						ClickCount:  10,
+						CreatedDate: createdDate,
+					},
+				}
+
+				mockRepo.EXPECT().FindAll(pagination.Page, pagination.Limit).Return(mockUrls, nil)
+
+				response, err := urlUseCase.GetUrlList(pagination)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(response).To(HaveLen(2))
+				Expect(response[0].OriginalUrl).To(Equal("http://example1.com"))
+				Expect(response[0].ShortUrl).To(Equal(fmt.Sprintf("%s:%s/%s", cfg.App.Hostname, cfg.App.Port, "id1")))
+				Expect(response[0].CountClick).To(Equal(*getLink[uint64](5)))
+				Expect(response[0].CreatedDate).To(Equal(createdDate))
+				Expect(response[1].OriginalUrl).To(Equal("http://example2.com"))
+				Expect(response[1].ShortUrl).To(Equal(fmt.Sprintf("%s:%s/%s", cfg.App.Hostname, cfg.App.Port, "id2")))
+				Expect(response[1].CountClick).To(Equal(*getLink[uint64](10)))
+				Expect(response[1].CreatedDate).To(Equal(createdDate))
+			})
+		})
+
+		Context("when the repository returns an error", func() {
+			It("should return an error", func() {
+				pagination := dto.PaginationRequest{Page: 1, Limit: 2}
+
+				mockRepo.EXPECT().FindAll(pagination.Page, pagination.Limit).Return(nil, errors.New("repository error"))
+
+				response, err := urlUseCase.GetUrlList(pagination)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("repository error"))
+				Expect(response).To(BeNil())
+			})
+		})
+	})
 })
+
+func getLink[T any](variable T) *T {
+	return &variable
+}
