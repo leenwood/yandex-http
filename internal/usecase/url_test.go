@@ -174,6 +174,96 @@ var _ = Describe("UrlUseCase", func() {
 			})
 		})
 	})
+
+	Describe("ClickUrl", func() {
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockRepo = mocks.NewMockRepositoryInterface(ctrl)
+			urlUseCase = &UrlUseCase{r: mockRepo}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		Context("when the URL is clicked successfully", func() {
+			It("should increment the click count and return the original URL", func() {
+				mockUrl := &url.Url{
+					Id:          "12345",
+					OriginalUrl: "example.com",
+					ClickCount:  5,
+				}
+
+				request := dto.UrlClickRequest{Id: "12345"}
+
+				mockRepo.EXPECT().FindById("12345").Return(mockUrl, nil)
+				mockRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updatedUrl *url.Url) (*url.Url, error) {
+					Expect(updatedUrl.ClickCount).To(Equal(uint64(6)))
+					return updatedUrl, nil
+				})
+
+				response, err := urlUseCase.ClickUrl(request)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(response).To(Equal("https://example.com"))
+			})
+		})
+
+		Context("when the URL has http/https prefix", func() {
+			It("should not add an extra prefix", func() {
+				mockUrl := &url.Url{
+					Id:          "12345",
+					OriginalUrl: "http://example.com",
+					ClickCount:  5,
+				}
+
+				request := dto.UrlClickRequest{Id: "12345"}
+
+				mockRepo.EXPECT().FindById("12345").Return(mockUrl, nil)
+				mockRepo.EXPECT().Update(gomock.Any()).Return(mockUrl, nil)
+
+				response, err := urlUseCase.ClickUrl(request)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(response).To(Equal("http://example.com"))
+			})
+		})
+
+		Context("when the URL is not found", func() {
+			It("should return an error", func() {
+				request := dto.UrlClickRequest{Id: "nonexistent"}
+
+				mockRepo.EXPECT().FindById("nonexistent").Return(nil, errors.New("URL not found"))
+
+				response, err := urlUseCase.ClickUrl(request)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("URL not found"))
+				Expect(response).To(BeEmpty())
+			})
+		})
+
+		Context("when updating the URL fails", func() {
+			It("should return an error", func() {
+				mockUrl := &url.Url{
+					Id:          "12345",
+					OriginalUrl: "example.com",
+					ClickCount:  5,
+				}
+
+				request := dto.UrlClickRequest{Id: "12345"}
+
+				mockRepo.EXPECT().FindById("12345").Return(mockUrl, nil)
+				mockRepo.EXPECT().Update(gomock.Any()).Return(nil, errors.New("update error"))
+
+				response, err := urlUseCase.ClickUrl(request)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("update error"))
+				Expect(response).To(BeEmpty())
+			})
+		})
+	})
 })
 
 func getLink[T any](variable T) *T {
