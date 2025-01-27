@@ -1,0 +1,33 @@
+
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker
+    ports:
+      - "9000:9000" # Пробрасываем порт приложения
+    environment:
+      - GIN_MODE=debug
+      - HOSTNAME=localhost
+      - PORT=9000
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASS=postgres
+      - DATABASE_NAME=app_db
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
