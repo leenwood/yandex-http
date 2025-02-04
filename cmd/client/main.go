@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	url := fmt.Sprintf("%s:%s", cfg.App.Hostname, cfg.App.Port)
+	url := fmt.Sprintf("0.0.0.0:%s", cfg.App.Port)
 	err = http.ListenAndServe(url, h)
 	if err != nil {
 		panic(err)

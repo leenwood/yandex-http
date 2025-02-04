@@ -14,8 +14,6 @@ func InitializationHandlers(ctx context.Context, cfg config.Config) (*gin.Engine
 		return nil, err
 	}
 
-	gin.SetMode(cfg.App.GinMode)
-
 	// Создаем новый роутер Gin
 	router := gin.New()
 

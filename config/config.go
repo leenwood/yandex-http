@@ -10,7 +10,6 @@ type Config struct {
 type AppConfig struct {
 	Hostname string
 	Port     string
-	GinMode  string
 }
 
 type DatabaseConfig struct {
@@ -19,7 +18,6 @@ type DatabaseConfig struct {
 	Username string
 	Password string
 	Database string
-	SSLMode  bool
 }
 
 func NewConfig() Config {
@@ -27,7 +25,6 @@ func NewConfig() Config {
 		App: AppConfig{
 			Hostname: getEnv("HOSTNAME", "localhost"),
 			Port:     getEnv("PORT", "9000"),
-			GinMode:  getEnv("GIN_MODE", "debug"),
 		},
 		Database: DatabaseConfig{
 			Hostname: getEnv("DATABASE_HOST", "localhost"),
@@ -35,7 +32,6 @@ func NewConfig() Config {
 			Username: getEnv("DATABASE_USER", "postgres"),
 			Password: getEnv("DATABASE_PASS", "postgres"),
 			Database: getEnv("DATABASE_NAME", "app_db"),
-			SSLMode:  false,
 		},
 	}
 }

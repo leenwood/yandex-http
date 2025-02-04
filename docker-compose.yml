@@ -1,15 +1,15 @@
 
-
 services:
   app:
     build:
       context: .
-      dockerfile: docker
+      dockerfile: docker/Dockerfile
+    container_name: app
     ports:
       - "9000:9000" # Пробрасываем порт приложения
     environment:
       - GIN_MODE=debug
-      - HOSTNAME=localhost
+      - HOSTNAME=host.docker.internal
       - PORT=9000
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
@@ -30,4 +30,4 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/:/var/lib/postgresql/data

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"leenwood/yandex-http/config"
 	"leenwood/yandex-http/internal/domain/url"
-	"leenwood/yandex-http/internal/domain/url/sqliteRepository"
+	"leenwood/yandex-http/internal/domain/url/postgresRepository"
 	"leenwood/yandex-http/internal/usecase/dto"
 	"strings"
 )
@@ -23,7 +23,7 @@ type UrlUseCase struct {
 }
 
 func NewUrlUseCase(ctx context.Context, config config.Config) (*UrlUseCase, error) {
-	repository, err := sqliteRepository.NewRepository(ctx, config.Database)
+	repository, err := postgresRepository.NewRepository(ctx, config.Database)
 	if err != nil {
 		return nil, err
 	}
